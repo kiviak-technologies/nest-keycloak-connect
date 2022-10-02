@@ -40,10 +40,14 @@ export class ResourceGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const resource = this.reflector.get<string>(
+    // Extract request/response
+    const [request, response] = extractRequest(context);
+
+    // Extract metadata
+    const resource = this.reflector.get<(request: any) => string>(
       META_RESOURCE,
-      context.getClass(),
-    );
+      context.getHandler(),
+    )(request);
     const scopes = this.reflector.get<string[]>(
       META_SCOPES,
       context.getHandler(),
@@ -95,8 +99,6 @@ export class ResourceGuard implements CanActivate {
 
     // Build permissions
     const permissions = scopes.map(scope => `${resource}:${scope}`);
-    // Extract request/response
-    const [request, response] = extractRequest(context);
 
     // if is not an HTTP request ignore this guard
     if (!request) {
